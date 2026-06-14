@@ -1,0 +1,15 @@
+.venv/
+.tmp/
+.test-tmp/
+.uv-cache/
+.ruff_cache/
+.pytest_cache/
+.pyright/
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.egg-info/
+src/muxer_ffmpeg/_bin/ffmpeg
+src/muxer_ffmpeg/_bin/ffmpeg.exe
+vendor/

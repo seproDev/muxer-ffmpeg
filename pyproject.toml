@@ -1,0 +1,106 @@
+[build-system]
+requires = ["hatchling>=1.27", "packaging>=24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "muxer-ffmpeg"
+version = "0.0.1"
+description = "Python helpers for muxing media files with a bundled minimal FFmpeg binary"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT AND LGPL-2.1-or-later"
+license-files = ["LICENSE", "LICENSES/*"]
+authors = [{ name = "sepro", email = "sepro@sepr0.com" }]
+keywords = ["ffmpeg", "media", "mux", "video", "audio", "subtitle"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Multimedia :: Video",
+  "Typing :: Typed",
+]
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "hatchling>=1.30.1",
+  "pyright>=1.1.410",
+  "pytest>=9.1.0",
+  "ruff>=0.15.17",
+  "zizmor>=1.25.2",
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["/.github", "/dist", "/vendor"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/muxer_ffmpeg"]
+artifacts = ["src/muxer_ffmpeg/_bin/ffmpeg", "src/muxer_ffmpeg/_bin/ffmpeg.exe"]
+
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "hatch_build.py"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+  "A",
+  "B",
+  "BLE",
+  "C4",
+  "E",
+  "F",
+  "I",
+  "N",
+  "PERF",
+  "PIE",
+  "RUF",
+  "UP",
+  "W",
+  "PT",
+  "FA",
+  "RET",
+  "SIM",
+  "PTH",
+  "PLE",
+  "PLC",
+  "PLW",
+]
+
+[tool.ruff.format]
+line-ending = "lf"
+
+[tool.pyright]
+include = ["src", "tests", "scripts", "hatch_build.py"]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--import-mode=importlib"]
+
+[tool.cibuildwheel]
+archs = "auto64"
+build = "cp311-*"
+build-frontend = "build[uv]"
+manylinux-x86_64-image = "manylinux2014"
+test-command = "python {project}/scripts/smoke_wheel.py"
+
+[[tool.cibuildwheel.overrides]]
+select = "*-macosx_*"
+environment = { MACOSX_DEPLOYMENT_TARGET = "14.0" }
+
+[[tool.cibuildwheel.overrides]]
+select = "*-manylinux_*"
+before-build = "python scripts/build_ffmpeg.py"
+
+[[tool.cibuildwheel.overrides]]
+select = "*-musllinux_*"
+before-all = "apk add make gcc musl-dev perl tar xz"
+before-build = "python scripts/build_ffmpeg.py"

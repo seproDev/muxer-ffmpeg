@@ -1,0 +1,74 @@
+name: wheels
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wheels-${{ github.event_name == 'push' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-14, windows-latest]
+
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: install ffmpeg deps
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@e9898307ac31d1a803454791be09ab9973336e1c # v2.31.1
+        with:
+          msystem: UCRT64
+          update: true
+          path-type: strict
+          install: >-
+            base-devel
+            mingw-w64-ucrt-x86_64-binutils
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-python
+
+      - name: build ffmpeg
+        if: runner.os == 'macOS'
+        run: python3 scripts/build_ffmpeg.py
+
+      - name: build ffmpeg
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: /ucrt64/bin/python scripts/build_ffmpeg.py
+
+      - name: verify ffmpeg from native Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ffmpeg = (Resolve-Path 'src/muxer_ffmpeg/_bin/ffmpeg.exe').Path
+          $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
+          $output = & $ffmpeg -hide_banner -version 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            throw "ffmpeg.exe failed with exit code $LASTEXITCODE`n$output"
+          }
+          $output | Select-Object -First 3
+
+      - name: build wheels
+        uses: pypa/cibuildwheel@f03ac7617d6cff873ccf24cc0d567ef5ba5a9e6d # v4.0.0
+        with:
+          extras: uv
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: wheelhouse/*.whl
+          if-no-files-found: error
