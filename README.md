@@ -28,3 +28,4 @@ The Python code in this repository is licensed under the [MIT License](LICENSE).
 Binary wheels also include a bundled FFmpeg executable.
 The bundled FFmpeg build is licensed under LGPL-2.1-or-later.
 See [LICENSES/LGPL-2.1-or-later.txt](LICENSES/LGPL-2.1-or-later.txt) for the FFmpeg license text.
+Source distributions do not include the FFmpeg executable.
