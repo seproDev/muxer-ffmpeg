@@ -76,6 +76,7 @@ jobs:
           TAG_NAME: ${{ needs.validate.outputs.tag_name }}
         run: |
           gh release create "$TAG_NAME" dist/*.whl \
+            --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "$TAG_NAME" \
             --generate-notes
