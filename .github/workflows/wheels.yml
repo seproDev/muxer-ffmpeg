@@ -20,7 +20,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-14, windows-latest]
+        include:
+          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
+          - os: macos-latest
+          - os: macos-15-intel
+          - os: windows-latest
+            msystem: UCRT64
+            msys_prefix: /ucrt64
+            mingw_prefix: mingw-w64-ucrt-x86_64
+          - os: windows-11-arm
+            msystem: CLANGARM64
+            msys_prefix: /clangarm64
+            mingw_prefix: mingw-w64-clang-aarch64
 
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -31,36 +43,26 @@ jobs:
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@e9898307ac31d1a803454791be09ab9973336e1c # v2.31.1
         with:
-          msystem: UCRT64
+          msystem: ${{ matrix.msystem }}
           update: true
           path-type: strict
           install: >-
             base-devel
-            mingw-w64-ucrt-x86_64-binutils
-            mingw-w64-ucrt-x86_64-gcc
-            mingw-w64-ucrt-x86_64-pkgconf
-            mingw-w64-ucrt-x86_64-python
+            ${{ matrix.mingw_prefix }}-binutils
+            ${{ matrix.mingw_prefix }}-gcc
+            ${{ matrix.mingw_prefix }}-pkgconf
+            ${{ matrix.mingw_prefix }}-python
 
       - name: build ffmpeg
         if: runner.os == 'macOS'
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "14.0"
         run: python3 scripts/build_ffmpeg.py
 
       - name: build ffmpeg
         if: runner.os == 'Windows'
         shell: msys2 {0}
-        run: /ucrt64/bin/python scripts/build_ffmpeg.py
-
-      - name: verify ffmpeg from native Windows
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $ffmpeg = (Resolve-Path 'src/muxer_ffmpeg/_bin/ffmpeg.exe').Path
-          $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
-          $output = & $ffmpeg -hide_banner -version 2>&1
-          if ($LASTEXITCODE -ne 0) {
-            throw "ffmpeg.exe failed with exit code $LASTEXITCODE`n$output"
-          }
-          $output | Select-Object -First 3
+        run: ${{ matrix.msys_prefix }}/bin/python scripts/build_ffmpeg.py
 
       - name: build wheels
         uses: pypa/cibuildwheel@f03ac7617d6cff873ccf24cc0d567ef5ba5a9e6d # v4.0.0

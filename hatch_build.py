@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import os
+import platform
 import sys
 from pathlib import Path
 from typing import Any
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
-from packaging.tags import platform_tags
+from packaging.tags import mac_platforms, platform_tags
 
 
 class CustomBuildHook(BuildHookInterface[Any]):
@@ -18,4 +20,14 @@ class CustomBuildHook(BuildHookInterface[Any]):
                 raise RuntimeError(msg)
 
         build_data["pure_python"] = False
-        build_data["tag"] = f"py3-none-{next(platform_tags())}"
+        build_data["tag"] = f"py3-none-{_platform_tag()}"
+
+
+def _platform_tag() -> str:
+    if sys.platform == "darwin":
+        deployment_target = os.environ.get("MACOSX_DEPLOYMENT_TARGET")
+        if deployment_target:
+            major, minor, *_ = deployment_target.split(".")
+            return next(mac_platforms((int(major), int(minor)), platform.machine()))
+
+    return next(platform_tags())
