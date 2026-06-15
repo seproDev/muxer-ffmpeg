@@ -25,6 +25,10 @@ classifiers = [
 ]
 dependencies = []
 
+[project.urls]
+Repository = "https://github.com/seproDev/muxer-ffmpeg"
+Issues = "https://github.com/seproDev/muxer-ffmpeg/issues"
+
 [dependency-groups]
 dev = [
   "hatchling>=1.30.1",
